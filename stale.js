@@ -45,7 +45,7 @@ function main(url) {
 			return fatal(err);
 		}
 
-		const repos = extractGithubRepos(txt).slice(0, 3);
+		const repos = extractGithubRepos(txt);
 
 		console.log(`Found ${repos.length} repos.`);
 		process.stdout.write('Processing...');
