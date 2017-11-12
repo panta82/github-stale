@@ -1,6 +1,23 @@
 const request = require('request');
 
+// TODO: Bad, accessing state directly
+const settings = require('./settings');
+
 const BASE_URL = 'https://api.github.com';
+
+class GithubApiError extends Error {
+	constructor(endpoint, statusCode, statusMessage, details) {
+		let message = `Error ${statusCode} at ${endpoint}`;
+		if (statusMessage) {
+			message += `: ${statusMessage}`;
+		}
+		if (details) {
+			message += '\n' + details;
+		}
+		super(message);
+		this.code = statusCode;
+	}
+}
 
 function makeRequest(endpoint, callback) {
 	const opts = {
@@ -8,11 +25,19 @@ function makeRequest(endpoint, callback) {
 		uri: `${BASE_URL}${endpoint}`,
 		json: true,
 		headers: {
-			'Accept': 'application/vnd.github.v3+json'
+			'Accept': 'application/vnd.github.v3+json',
+			'User-Agent': 'Ad-hoc github API by Panta'
 		}
 	};
+	if (settings.github_token) {
+		opts.headers['Authorization'] = `token ${settings.github_token}`;
+	}
 
 	return request(opts, (err, res, body) => {
+		if (!err && res.statusCode >= 400) {
+			err = new GithubApiError(endpoint, res.statusCode, res.statusMessage, body.message || body);
+		}
+
 		if (err) {
 			return callback(err);
 		}
